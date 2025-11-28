@@ -3,6 +3,7 @@ import mediapipe as mp
 import time
 import pygame
 import numpy as np
+import autopy
 
 
 class HandDetector(object):
@@ -21,6 +22,7 @@ class HandDetector(object):
         self.console_pos = console_pos
         self.console_size = console_size
         self.p_time = 0
+        self.selected = False
 
     def find_hands(self, img, draw=True):
         """ Processes an RGB image and returns the hand landmarks and handedness of each detected hand.
@@ -49,19 +51,45 @@ class HandDetector(object):
         """
 
         lm_list = []
+        lm_id = []
+        lm_cy = []
+
         if self.results.multi_hand_landmarks:
             my_hand = self.results.multi_hand_landmarks[hand_no]
             for id_point, lm in enumerate(my_hand.landmark):
-                # print(id, lm)
+                # print(id_point, lm)
                 h, w, c = img.shape
-                cx, cy = int(lm.x*w), int(lm.y*h)
+                cx, cy = int(lm.x * w), int(lm.y * h)
                 # print(id, cx, cy)
                 lm_list.append((id_point, cx, cy))
-                if draw:
-                    if id_point == 8:
-                        cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
+                lm_id.append(id_point)
+                lm_cy.append(cy)
 
-        return lm_list
+                if len(lm_cy) >= 13:
+                    y1 = int(lm_cy[12])
+                    y2 = int(lm_cy[9])
+
+                    if y2 < y1:
+                        self.selected = True
+                        # autopy.mouse.click()
+                    else:
+                        self.selected = False
+
+                if draw:
+                    if id_point == 9:
+
+                        w, h = 225, 150
+                        cx_2 = (cx - w) * 5
+                        cy_2 = (cy - h) * 5
+                        # cx_2 = cx * 3
+                        # cy_2 = cy * 3
+                        try:
+                            autopy.mouse.move(cx_2, cy_2)
+                        except ValueError:
+                            print("Poza zasiegiem")
+                        cv2.circle(img, (cx, cy), 10, (255, 0, 255), cv2.FILLED)
+
+        return lm_list, self.selected
 
     def console_panel(self, img):
         """
